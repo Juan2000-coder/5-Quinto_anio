@@ -1,16 +1,15 @@
 //Variables:------------------------------------------
-int     columnas, filas, escala, ancho, alto, vel, R, r;
-float   anguloX, anguloY, dAngX, dAngY;
-color   c1, c2, c3, c4, c5;
-boolean horizontal, first;
-PImage  textura1, textura2;
-PShape  modelo3D;
+int      ancho, alto, vel;
+float    anguloX, anguloY, dAngX, dAngY;
+boolean  horizontal, first;
+PImage   textura1, textura2;
+PShape   modelo3D;
 String[] archivos;  // Lista de archivos en la carpeta "data"
+ArrayList<String> imagenes = new ArrayList<String>();
 //-----------------------------------------------------
 
 void setup() {
   size(900, 700, P3D);
-  escala   = 20;             // número de pixeles por unidad
   
   ancho    = 600;            // ancho del plano
   alto     = 400;            // alto del plano
@@ -20,35 +19,26 @@ void setup() {
   anguloX  = 0;              // ángulo de rotación inicial en x
   anguloY  = 0;              // ángulo de rotación inicial en y
   
-  dAngX    = PI*vel/1024;    // velocidad de rotación alrededor del eje x
-  dAngY    = 0;              // velocidad de rotación alrededor del eje y
+  dAngX    = PI*vel/1024;    // incremento alrededor del eje x
+  dAngY    = 0;              // incremento alrededor del eje y
   
-  archivos = listPaths(sketchPath("data"));
+  archivos = listPaths(sketchPath("data")); // todos los archivos en /data
   
   // Filtrar solo las imágenes (JPG)
-  ArrayList<String> imagenes = new ArrayList<String>();
-  for (String archivo : archivos) {
+  for (String archivo : archivos) { // obtención de los archivos .jpg
     if (archivo.endsWith(".jpg")) {
       imagenes.add(archivo);
     }
-    if (archivo.endsWith(".obj")) {
-      println(archivo);
+    if (archivo.endsWith(".obj")) { // carga el modelo 3D
       modelo3D = loadShape(archivo);
     }
   }
   
-  // Elegir una imagen aleatoria
-  if (imagenes.size() > 0) {
-    String rutaTextura = imagenes.get(int(random(imagenes.size())));
-    textura1 = loadImage(rutaTextura);
-    rutaTextura = imagenes.get(int(random(imagenes.size())));
-    textura2 = loadImage(rutaTextura);
-  } else {
-    println("No se encontraron imágenes en la carpeta 'data'");
-  }
+  horizontal           = false; // arranca rotando respecto del eje x
+  first                = true;
   
-  horizontal = false; // arranca rotando respecto del eje x
-  first      = true;
+  // elección de las texturas
+  SetTextures();
 }
 
 void draw() {
@@ -69,7 +59,7 @@ void draw() {
   
   rotateX(dAngX); // Rotación continua en X
   rotateY(dAngY); // Rotación continua en Y
-  pushMatrix();   // Guarda la configuración del sstema
+  pushMatrix();   // Guarda la configuración del sistema
   
   drawAxes(500);  // Ejes de referencia
 
@@ -87,12 +77,23 @@ void draw() {
   shape(modelo3D, 0, 0); 
 
 }
+void SetTextures(){
+  if (imagenes.size() > 0) {
+      String rutaTextura = imagenes.get(int(random(imagenes.size())));
+      textura1           = loadImage(rutaTextura);
+      rutaTextura        = imagenes.get(int(random(imagenes.size())));
+      textura2           = loadImage(rutaTextura);
+    } else {
+      println("No se encontraron imágenes en la carpeta 'data'");
+    }
+}
+  
 void plano(PImage textura, float ancho, float alto){
   beginShape(QUADS);
   texture(textura);
   vertex(-ancho/2, -alto/2, 0, 0, 0);                         // Esquina superior izquierda
   vertex(ancho/2, -alto/2, 0, textura.width, 0);              // Esquina superior derecha
-  vertex(ancho/2, alto/2, 0, textura.width, textura.height); // Esquina inferior derecha
+  vertex(ancho/2, alto/2, 0, textura.width, textura.height);  // Esquina inferior derecha
   vertex(-ancho/2, alto/2, 0, 0, textura.height);             // Esquina inferior izquierda
   endShape();
 }
@@ -110,34 +111,6 @@ void drawAxes(float size) {
   line(0, 0, 0, 0, 0, size); // Línea para el eje Z
 }
 
-void drawToroide(float r1, float r2) {
-  int n1 = 40; // Número de segmentos a lo largo del círculo grande
-  int n2 = 20; // Número de segmentos a lo largo del círculo pequeño
-
-  for (int i = 0; i < n1; i++) {
-    float theta1 = TWO_PI * i / n1;
-    float theta2 = TWO_PI * (i+1) / n1;
-    
-    beginShape(TRIANGLE_STRIP);
-    for (int j = 0; j <= n2; j++) {
-      float phi = TWO_PI * j / n2;
-      
-      // Primer vértice
-      float x1 = (r1 + r2 * cos(phi)) * cos(theta1);
-      float y1 = (r1 + r2 * cos(phi)) * sin(theta1);
-      float z1 = r2 * sin(phi);
-      vertex(x1, y1, z1);
-      
-      // Segundo vértice
-      float x2 = (r1 + r2 * cos(phi)) * cos(theta2);
-      float y2 = (r1 + r2 * cos(phi)) * sin(theta2);
-      float z2 = r2 * sin(phi);
-      vertex(x2, y2, z2);
-    }
-    endShape();
-  }
-}
-
 void keyPressed() {
   //Evento: presionar una tecla:
   if(key == CODED) {
@@ -148,7 +121,7 @@ void keyPressed() {
     }
     if(keyCode == DOWN) {
       horizontal = false;
-      dAngX    = -PI*vel/1024;   // velocidad de rotación alrededor del eje x
+      dAngX    = -PI*vel/1024;  // velocidad de rotación alrededor del eje x
       dAngY    = 0;
     }
     if(keyCode == LEFT) {
@@ -172,13 +145,11 @@ void keyPressed() {
   }
 
   if (key == 'E' || key == 'e') {
-    //escala = escala + 1;
     ancho += 10;
     alto   = 400*ancho/600; 
   }
   
   if (key == 'W' || key == 'w') {
-    //escala = escala - 1;
     ancho -= 10;
     alto   = 400*ancho/600; 
   }
@@ -221,6 +192,6 @@ void keyPressed() {
   }
   
   if (key == 'R' || key == 'r') {
-    setup();
+    SetTextures();
   }
 }
